@@ -15,7 +15,6 @@ if 'api_keys' not in st.session_state:
     st.session_state['api_keys'] = {
         "OpenAI": "",
         "DeepSeek": "",
-        # 可以繼續添加其他模型，比如 "Grok": "" 等
     }
 
 if 'selected_model' not in st.session_state:
@@ -28,15 +27,22 @@ with st.sidebar:
     # 選擇大模型
     st.session_state['selected_model'] = st.selectbox(
         "選擇大模型",
-        ["OpenAI", "DeepSeek"]  # 可以繼續添加其他模型
+        ["OpenAI", "DeepSeek"]
     )
     
-    # 根據選擇的模型顯示對應的API密钥輸入框
+    # 檢查是否從 st.secrets 讀取到了 API 密钥
     model = st.session_state['selected_model']
-    api_key = st.text_input(f"輸入 {model} API 密钥", type="password", value=st.session_state['api_keys'][model])
-    if st.button("保存API密钥"):
-        st.session_state['api_keys'][model] = api_key
-        st.success(f"{model} API 密钥已保存!")
+    api_key_name = f"{model.upper()}_API_KEY"  # 轉為大寫，例如 DEEPSEEK_API_KEY
+    api_key_from_secrets = None
+    try:
+        api_key_from_secrets = st.secrets[api_key_name]
+        st.session_state['api_keys'][model] = api_key_from_secrets
+    except KeyError:
+        # 如果 Secrets 中沒有，則顯示輸入框讓用戶手動輸入
+        api_key = st.text_input(f"輸入 {model} API 密钥", type="password", value=st.session_state['api_keys'][model])
+        if st.button("保存API密钥"):
+            st.session_state['api_keys'][model] = api_key
+            st.success(f"{model} API 密钥已保存!")
     
     st.divider()
     st.markdown("## 助手角色")
@@ -99,13 +105,6 @@ MODEL_CONFIGS = {
             "temperature": 0.7
         }
     }
-    # 你可以在這裡添加其他模型的配置，例如：
-    # "Grok": {
-    #     "api_url": "https://api.xai.com/v1/chat/completions",
-    #     "model_name": "grok",
-    #     "headers": lambda api_key: {...},
-    #     "payload": lambda messages: {...}
-    # }
 }
 
 # 當用戶提交問題時
